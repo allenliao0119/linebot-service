@@ -6,6 +6,20 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
+type ServerEnv string
+
+const (
+	ServerEnvDevelopment ServerEnv = "development"
+	ServerEnvProduction  ServerEnv = "production"
+)
+
+type ChatMode string
+
+const (
+	ChatModeSimple ChatMode = "simple"
+	ChatModeAI     ChatMode = "ai"
+)
+
 type Config struct {
 	Server ServerConfig `envconfig:"SERVER"`
 	LINE   LINEConfig   `envconfig:"LINE"`
@@ -14,8 +28,8 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port string `envconfig:"PORT" default:"8080"`
-	Env  string `envconfig:"ENV" default:"development"` // development, production
+	Port string    `envconfig:"PORT" default:"8080"`
+	Env  ServerEnv `envconfig:"ENV" default:"development"`
 }
 
 type LINEConfig struct {
@@ -24,7 +38,7 @@ type LINEConfig struct {
 }
 
 type ChatConfig struct {
-	Mode string `envconfig:"MODE" default:"simple"` // simple, ai
+	Mode ChatMode `envconfig:"MODE" default:"simple"`
 }
 
 type OpenAIConfig struct {
@@ -47,21 +61,33 @@ func Load() (*Config, error) {
 }
 
 func (cfg *Config) Validate() error {
-	if cfg.Chat.Mode != "simple" && cfg.Chat.Mode != "ai" {
+	// Validate server environment
+	switch cfg.Server.Env {
+	case ServerEnvDevelopment, ServerEnvProduction:
+		// valid
+	default:
+		return fmt.Errorf("invalid server environment: %s (must be 'development' or 'production')", cfg.Server.Env)
+	}
+
+	// Validate chat mode
+	switch cfg.Chat.Mode {
+	case ChatModeSimple:
+		// no additional validation needed
+	case ChatModeAI:
+		if cfg.OpenAI.APIKey == "" {
+			return fmt.Errorf("OPENAI_API_KEY is required when CHAT_MODE is 'ai'")
+		}
+	default:
 		return fmt.Errorf("invalid chat mode: %s (must be 'simple' or 'ai')", cfg.Chat.Mode)
 	}
 
-	if cfg.Chat.Mode == "ai" && cfg.OpenAI.APIKey == "" {
-		return fmt.Errorf("OPENAI_API_KEY is required when CHAT_MODE is 'ai'")
-	}
-
-	return  nil
+	return nil
 }
 
 func (cfg *Config) IsProduction() bool {
-	return cfg.Server.Env == "production"
+	return cfg.Server.Env == ServerEnvProduction
 }
 
 func (cfg *Config) IsChatModeAI() bool {
-	return cfg.Chat.Mode == "ai"
+	return cfg.Chat.Mode == ChatModeAI
 }
