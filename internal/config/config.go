@@ -2,7 +2,9 @@ package config
 
 import (
 	"fmt"
+	"log"
 
+	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -33,8 +35,8 @@ type ServerConfig struct {
 }
 
 type LINEConfig struct {
-	ChannelSecret      string `envconfig:"CHANNEL_SECRET" required:"true"`
-	ChannelAccessToken string `envconfig:"CHANNEL_ACCESS_TOKEN" required:"true"`
+	ChannelSecret      string `envconfig:"LINE_CHANNEL_SECRET" required:"true"`
+	ChannelAccessToken string `envconfig:"LINE_CHANNEL_ACCESS_TOKEN" required:"true"`
 }
 
 type ChatConfig struct {
@@ -47,6 +49,11 @@ type OpenAIConfig struct {
 }
 
 func Load() (*Config, error) {
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Printf("warning: .env file not found, using environment variables only")
+	}
+
 	var cfg Config
 
 	if err := envconfig.Process("", &cfg); err != nil {
@@ -75,7 +82,7 @@ func (cfg *Config) Validate() error {
 		// no additional validation needed
 	case ChatModeAI:
 		if cfg.OpenAI.APIKey == "" {
-			return fmt.Errorf("OPENAI_API_KEY is required when CHAT_MODE is 'ai'")
+			return fmt.Errorf("openai api key is required when chat mode is 'ai'")
 		}
 	default:
 		return fmt.Errorf("invalid chat mode: %s (must be 'simple' or 'ai')", cfg.Chat.Mode)
