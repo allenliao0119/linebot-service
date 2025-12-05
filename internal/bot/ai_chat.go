@@ -7,11 +7,13 @@ import (
 
 type AIChatBot struct{
 	apiKey string
+	model  string
 }
 
-func NewAIChatBot(apiKey string) *AIChatBot {
+func NewAIChatBot(apiKey string, model string) *AIChatBot {
 	return &AIChatBot{
 		apiKey: apiKey,
+		model: model,
 	}
 }
 
