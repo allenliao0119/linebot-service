@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"io"
 	"log"
 	"net/http"
 
@@ -23,24 +22,10 @@ func NewWebHookHandler(channelSecret string, botService *service.LineBotService)
 }
 
 func (h *WebHookHandler) Handle(c *gin.Context) {
-	body, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		log.Printf("failed to read body: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
-		return
-	}
-
-	signature := c.GetHeader("X-Line-Signature")
-	if !webhook.ValidateSignature(h.channelSecret, signature, body) {
-		log.Println("invalid signature")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid signature"})
-		return
-	}
-
 	cb, err := webhook.ParseRequest(h.channelSecret, c.Request)
 	if err != nil {
 		log.Printf("failed to parse request: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "parse error"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
 	}
 
