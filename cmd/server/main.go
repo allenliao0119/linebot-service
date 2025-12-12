@@ -2,11 +2,11 @@ package main
 
 import (
 	"log"
-	"net/http"
 
 	"github.com/allenliao0119/linebot-service/internal/bot"
 	"github.com/allenliao0119/linebot-service/internal/config"
 	"github.com/allenliao0119/linebot-service/internal/handler"
+	"github.com/allenliao0119/linebot-service/internal/router"
 	"github.com/allenliao0119/linebot-service/internal/service"
 	"github.com/gin-gonic/gin"
 )
@@ -38,17 +38,10 @@ func main() {
 		log.Fatalf("failed to create bot service: %v", err)
 	}
 
-	r := gin.Default()
-
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-			"env": cfg.Server.Env,
-		})
-	})
-
+	healthHandler := handler.NewHealthHandler()
 	webhookHandler := handler.NewWebHookHandler(cfg.LINE.ChannelSecret, botService)
-	r.POST("webhook", webhookHandler.Handle)
+
+	r := router.NewRouter(healthHandler, webhookHandler)
 
 	log.Printf("server starting on port %s (env: %s)", cfg.Server.Port, cfg.Server.Env)
 	if err := r.Run(":" + cfg.Server.Port); err != nil {
