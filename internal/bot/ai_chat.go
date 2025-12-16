@@ -2,7 +2,11 @@ package bot
 
 import (
 	"context"
-	"fmt"
+	"log"
+
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/option"
+	"github.com/openai/openai-go/v3/responses"
 )
 
 type AIChatBot struct{
@@ -11,6 +15,9 @@ type AIChatBot struct{
 }
 
 func NewAIChatBot(apiKey string, model string) *AIChatBot {
+	if apiKey == "" {
+		log.Fatal("OpenAI API key is required")
+	}
 	return &AIChatBot{
 		apiKey: apiKey,
 		model: model,
@@ -18,5 +25,17 @@ func NewAIChatBot(apiKey string, model string) *AIChatBot {
 }
 
 func (b *AIChatBot) GetResponse(ctx context.Context, userMessage string, userID string) (string, error) {
-	return "", fmt.Errorf("AI chat not implement yet")
+	client := openai.NewClient(
+		option.WithAPIKey(b.apiKey),
+	)
+	
+	resp, err := client.Responses.New(ctx, responses.ResponseNewParams{
+		Model: b.model,
+		Input: responses.ResponseNewParamsInputUnion{OfString: openai.String(userMessage)},
+	})
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return resp.OutputText(), nil
 }
