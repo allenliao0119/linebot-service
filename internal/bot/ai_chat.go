@@ -3,6 +3,8 @@ package bot
 import (
 	"context"
 	"log"
+	"regexp"
+	"strings"
 
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
@@ -29,15 +31,12 @@ func (b *AIChatBot) GetResponse(ctx context.Context, userMessage string, userID 
 		option.WithAPIKey(b.apiKey),
 	)
 
-	systemPrompt := "你是一個 LINE Bot 助手，請使用繁體中文回答用戶的問題。你應該友善、樂於助人，並提供清晰簡潔的回答。"
+	systemPrompt := "你是一個LINE Bot助手，請使用繁體中文回答用戶的問題。你應該友善，並提供清晰簡潔的回答。如果需要標示段落、數字或是要表示重點時，適度會使用icon、幫助用戶快速抓到重點"
 
 	resp, err := client.Responses.New(ctx, responses.ResponseNewParams{
 		Model:        b.model,
 		Instructions: openai.String(systemPrompt),
 		Input: responses.ResponseNewParamsInputUnion{
-			OfInputItemList: responses.ResponseInputParam{
-
-			},
 			OfString: openai.String(userMessage),
 		},
 		Tools: []responses.ToolUnionParam{
@@ -48,5 +47,18 @@ func (b *AIChatBot) GetResponse(ctx context.Context, userMessage string, userID 
 		panic(err.Error())
 	}
 
-	return resp.OutputText(), nil
+	return convertMarkdownToLineText(resp.OutputText()), nil
+}
+
+func convertMarkdownToLineText(text string) string {
+    // Remove #### heading symbols, keep the text
+    text = regexp.MustCompile(`#{1,6}\s*`).ReplaceAllString(text, "")
+    
+    // Convert **bold** to plain text (optional: add symbols for emphasis)
+    text = regexp.MustCompile(`\*\*([^*]+)\*\*`).ReplaceAllString(text, "【$1】")
+    
+    // Convert - list items to • or numbers
+    text = regexp.MustCompile(`(?m)^-\s+`).ReplaceAllString(text, "• ")
+    
+    return strings.TrimSpace(text)
 }
