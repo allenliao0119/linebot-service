@@ -40,6 +40,9 @@ func (b *AIChatBot) GetResponse(ctx context.Context, userMessage string, userID 
 			},
 			OfString: openai.String(userMessage),
 		},
+		Tools: []responses.ToolUnionParam{
+			responses.ToolParamOfWebSearch(responses.WebSearchToolTypeWebSearch),
+		},
 	})
 	if err != nil {
 		panic(err.Error())
